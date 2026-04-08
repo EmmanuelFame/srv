@@ -1,0 +1,56 @@
+services:
+  cloud-bot:
+    build: .
+    container_name: cloud-bot
+    restart: always
+    env_file: .env
+    expose:
+      - "3001"
+    depends_on:
+      - redis
+
+  nginx:
+    build: ./nginx
+    container_name: cloud-bot-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - cloud-bot
+
+    # IMPORTANT: allow nginx container to reach HOST services (e.g., external web apps)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /srv/certbot-www:/var/www/certbot:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/auth:/etc/nginx/auth:ro
+
+  redis:
+    image: redis:7
+    container_name: cloud-bot-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+
+
+  # llama:
+  #   build:
+  #     context: ./llama
+  #     dockerfile: Dockerfile
+  #   container_name: cloud-bot-llama
+  #   restart: unless-stopped
+  #   expose:
+  #     - "8080"
+  #   volumes:
+  #     - ./models:/models:ro
+  #   command: >
+  #     --model /models/qwen2.5-1.5b-instruct-q4_k_m.gguf
+  #     --host 0.0.0.0
+  #     --port 8080
+  #     --threads 2
+  #     --ctx-size 1024
