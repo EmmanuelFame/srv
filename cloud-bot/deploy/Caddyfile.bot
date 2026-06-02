@@ -1,0 +1,39 @@
+bot.safecareorganisation.org {
+    encode gzip
+
+    @storage path /storage/*
+    handle @storage {
+        reverse_proxy https://safecareorganisation.org {
+            header_up Host safecareorganisation.org
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            transport http {
+                tls_server_name safecareorganisation.org
+            }
+        }
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:3001 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+
+    log {
+        output file /var/log/caddy/cloud-bot.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+    }
+}
